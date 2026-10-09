@@ -1,0 +1,61 @@
+{% from "_icons.html" import ico with context %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Dashboard{% endblock %} · Hall Exams</title>
+  <script>document.documentElement.dataset.theme=localStorage.getItem('theme')||'light'</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Source+Serif+4:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% block body %}
+{% set ep = request.endpoint %}
+<div class="shell">
+  <aside class="side" id="side">
+    <a class="brand" href="{{ url_for('index') }}"><span class="logo">{{ ico('cap') }}</span><span><b>Hall Exams</b><small>Seat allocation portal</small></span></a>
+    <div class="nav-label">Menu</div>
+    <nav>
+      <a href="{{ url_for('index') }}" class="{{ 'on' if ep == 'index' }}">{{ ico('dash') }} Dashboard</a>
+      {% if is_admin %}<a href="{{ url_for('allocate_page') }}" class="{{ 'on' if ep == 'allocate_page' }}">{{ ico('bolt') }} Allocate Hall</a>{% endif %}
+      <a href="{{ url_for('exams_page') }}" class="{{ 'on' if ep in ('exams_page','exam_detail') }}">{{ ico('exam') }} Exams</a>
+      <a href="{{ url_for('halls_page') }}" class="{{ 'on' if ep == 'halls_page' }}">{{ ico('hall') }} Exam halls</a>
+      <a href="{{ url_for('students_page') }}" class="{{ 'on' if ep == 'students_page' }}">{{ ico('users') }} Students</a>
+      <a href="{{ url_for('lookup') }}" class="{{ 'on' if ep == 'lookup' }}">{{ ico('find') }} Find my seat</a>
+      {% if is_admin %}<a href="{{ url_for('users_page') }}" class="{{ 'on' if ep == 'users_page' }}">{{ ico('shield') }} Users</a>{% endif %}
+    </nav>
+    <div class="side-foot">
+      <div class="who"><span class="avatar me">{{ user.name[:1]|upper }}</span><span><b>{{ user.name }}</b><small>{{ 'Admin' if is_admin else 'User' }}</small></span></div>
+      <form method="post" action="{{ url_for('logout') }}"><button class="btn sm out" type="submit">{{ ico('out') }} Sign out</button></form>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="menu-btn" id="menu" aria-label="Open menu">{{ ico('menu') }}</button>
+      <span class="crumb">{% block crumb %}{{ self.title() }}{% endblock %}</span>
+      <span class="badge {{ 'ok' if is_admin else 'info' }}" style="margin-left:auto">{{ 'Admin' if is_admin else 'User · view only' }}</span>
+      <span class="date" style="margin-left:0">{{ ico('cal') }} <span id="today"></span></span>
+      <button class="menu-btn show" id="theme" aria-label="Toggle dark mode" title="Dark / light">{{ ico('moon') }}</button>
+    </header>
+    <main>{% block content %}{% endblock %}</main>
+  </div>
+</div>
+<script>
+document.getElementById('today').textContent=new Date().toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+document.getElementById('menu').onclick=()=>document.getElementById('side').classList.toggle('open');
+document.getElementById('theme').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;localStorage.setItem('theme',t)};
+</script>
+{% endblock %}
+<div class="toasts">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for c, m in messages %}<div class="toast {{ c }}">{{ m }}</div>{% endfor %}{% endwith %}
+</div>
+<script>
+document.querySelectorAll('form[method=post]').forEach(f=>{if(!f.querySelector('[name=csrf_token]')){const i=document.createElement('input');i.type='hidden';i.name='csrf_token';i.value='{{ csrf_token() }}';f.appendChild(i)}});
+document.querySelectorAll('[data-dept]').forEach(e=>{let h=0;for(const c of e.dataset.dept)h=(h*47+c.charCodeAt(0)*13)%360;e.style.setProperty('--h',h)});
+setTimeout(()=>document.querySelectorAll('.toast').forEach(t=>t.remove()),5000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

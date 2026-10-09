@@ -1,0 +1,29 @@
+{% extends "_auth.html" %}{% from "_icons.html" import ico %}
+{% block title %}Create account{% endblock %}
+{% block form %}
+<h1>Create your account</h1><p class="muted">Choose User (view only) or Admin (full access, needs the admin code).</p>
+<form method="post" autocomplete="on">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% set role = role|default('user') %}
+  <div class="seg"><button type="button" data-r="user" class="{{ 'on' if role != 'admin' }}">User</button><button type="button" data-r="admin" class="{{ 'on' if role == 'admin' }}">Admin</button></div>
+  <input type="hidden" name="role" id="role" value="{{ role }}">
+  <label>Full name<div class="field">{{ ico('user') }}<input name="name" value="{{ name }}" placeholder="Priya Devi" required autofocus autocomplete="name"></div></label>
+  <label>Email<div class="field">{{ ico('mail') }}<input type="email" name="email" value="{{ email }}" placeholder="you@college.edu" required autocomplete="username"></div></label>
+  <div class="row">
+    <label>Password<div class="field">{{ ico('lock') }}<input type="password" name="password" id="pw" minlength="8" required autocomplete="new-password"><button type="button" class="eye" aria-label="Show password">{{ ico('eye') }}</button></div></label>
+    <label>Confirm<div class="field">{{ ico('lock') }}<input type="password" name="confirm" minlength="8" required autocomplete="new-password"></div></label>
+  </div>
+  <div class="meter"><i id="bar"></i></div><small class="muted" id="hint">Use 8+ characters with a letter and a number.</small>
+  {% if need_code %}<label style="margin-top:14px">Invite code<div class="field">{{ ico('shield') }}<input name="code" required></div></label>{% endif %}
+  <label id="acode" style="margin-top:14px" {{ '' if role == 'admin' else 'hidden' }}>Admin code<div class="field">{{ ico('shield') }}<input name="admin_code" autocomplete="off" placeholder="Shown in the server window"></div></label>
+  <button class="btn gold block lg" type="submit" style="margin-top:16px">Create account</button>
+</form>
+<p class="switch">Already registered? <a href="{{ url_for('login') }}">Sign in</a></p>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('role').value=b.dataset.r;document.getElementById('acode').hidden=b.dataset.r!=='admin'});
+document.querySelectorAll('.eye').forEach(b=>b.onclick=()=>{const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password'});
+const pw=document.getElementById('pw'),bar=document.getElementById('bar'),hint=document.getElementById('hint');
+pw.oninput=()=>{const v=pw.value;let s=0;if(v.length>=8)s++;if(/[A-Za-z]/.test(v)&&/\d/.test(v))s++;if(v.length>=12)s++;if(/[^A-Za-z0-9]/.test(v))s++;
+bar.style.width=s*25+'%';bar.style.background=['#c0392b','#c0392b','#c39a45','#1f8a5b','#1f8a5b'][s];hint.textContent=['Too short','Weak','Okay','Good','Strong'][s]};
+</script>{% endblock %}

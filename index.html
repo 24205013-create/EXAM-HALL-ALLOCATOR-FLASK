@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section class="hero">
+  <div><span class="eyebrow">{{ greeting }}</span><h1>{{ user.name.split()[0] }}, here’s your exam overview</h1>
+  <p>{% if upcoming %}Next exam <b>{{ upcoming.name }}</b> {% if upcoming.days == 0 %}is <b>today</b>{% elif upcoming.days == 1 %}is <b>tomorrow</b>{% else %}is in <b>{{ upcoming.days }} days</b>{% endif %} · {{ upcoming.date }}{% else %}No upcoming exams scheduled.{% endif %}</p></div>
+  <div class="tools">{% if is_admin %}<a class="btn gold lg" href="{{ url_for('allocate_page') }}">{{ ico('bolt') }} Allocate Hall</a><a class="btn ghost" href="{{ url_for('students_page') }}">{{ ico('users') }} Add students</a><a class="btn ghost" href="{{ url_for('exams_page') }}">{{ ico('plus') }} New exam</a>{% else %}<a class="btn gold lg" href="{{ url_for('exams_page') }}">{{ ico('exam') }} View exams</a><a class="btn ghost" href="{{ url_for('lookup') }}">{{ ico('find') }} Find my seat</a>{% endif %}</div>
+</section>
+<div class="stats">
+  <div class="card stat"><div class="ic">{{ ico('hall') }}</div><div><b>{{ stats.halls }}</b><span>Exam halls</span></div></div>
+  <div class="card stat"><div class="ic gold">{{ ico('seat') }}</div><div><b>{{ stats.seats }}</b><span>Total seats</span></div></div>
+  <div class="card stat"><div class="ic green">{{ ico('users') }}</div><div><b>{{ stats.students }}</b><span>Students</span></div></div>
+  <div class="card stat"><div class="ic rose">{{ ico('exam') }}</div><div><b>{{ stats.exams }}</b><span>Exams · {{ stats.allocated }} seated</span></div></div>
+</div>
+<div class="g-side">
+  <div class="card">
+    <h3>Exam schedule <a class="btn sm ghost" href="{{ url_for('exams_page') }}">View all</a></h3>
+    {% if exams %}
+    <div class="scroll"><table>
+      <thead><tr><th>Exam</th><th>Date</th><th>Seating</th><th></th></tr></thead>
+      <tbody>{% for e in exams %}
+        <tr><td><b>{{ e.name }}</b><small class="muted" style="display:block">{{ 'Forenoon' if e.session == 'FN' else 'Afternoon' }}</small></td><td class="muted">{{ e.date }}</td>
+        <td style="min-width:170px">{% if e.allocated %}<span class="badge ok">Allocated</span> <small class="muted">{{ e.allocated }}/{{ e.capacity }}</small>{% else %}<span class="badge warn">Pending</span>{% endif %}</td>
+        <td class="tools">{% if is_admin %}<a class="btn sm gold" href="{{ url_for('allocate_page', exam=e._id) }}">{{ 'Re-allocate' if e.allocated else 'Allocate' }}</a>{% endif %}<a class="btn sm ghost" href="{{ url_for('exam_detail', exam_id=e._id) }}">Open</a></td></tr>
+      {% endfor %}</tbody></table></div>
+    {% else %}<div class="empty"><b>No exams yet</b>Add halls and students, then create your first exam.</div>{% endif %}
+  </div>
+  <div class="stack">
+    <div class="card"><h3>Students by department</h3>
+      {% if depts %}<div class="donut-wrap"><div class="donut" style="background:{{ donut }}"><span>{{ stats.students }}<small>students</small></span></div>
+        <ul class="legend">{% for d in depts %}<li data-dept="{{ d._id }}"><i></i>{{ d._id }}<b>{{ d.n }}</b></li>{% endfor %}</ul></div>
+      {% else %}<div class="empty">No students imported yet.</div>{% endif %}
+    </div>
+    <div class="card"><h3>Seat usage</h3>
+      <div class="prog {{ 'full' if stats.students <= stats.seats }}"><i style="width:{{ [stats.students * 100 / stats.seats, 100]|min if stats.seats else 0 }}%"></i></div>
+      <p class="muted" style="margin:10px 0 0">{{ stats.students }} students for {{ stats.seats }} seats{% if stats.students > stats.seats %} — add more halls{% endif %}.</p>
+    </div>
+  </div>
+</div>
+<h2 style="margin:28px 0 14px">Halls</h2>
+{% if halls %}<div class="cards">{% for h in halls %}
+  <div class="card hall-card"><h3>{{ h.name }}</h3>
+    <div class="mini" style="grid-template-columns:repeat({{ h.cols }},1fr)">{% for i in range([h.rows * h.cols, 120]|min) %}<i></i>{% endfor %}</div>
+    <div class="meta"><span>{{ h.rows }} rows × {{ h.cols }} cols</span><b>{{ h.rows * h.cols }} seats</b></div></div>
+{% endfor %}</div>{% else %}<div class="card empty"><b>No halls yet</b><a href="{{ url_for('halls_page') }}">Add your first hall</a></div>{% endif %}
+{% endblock %}

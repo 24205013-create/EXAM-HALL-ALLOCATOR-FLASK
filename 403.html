@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}Admins only{% endblock %}
+{% block content %}
+<div class="card empty" style="max-width:520px;margin:40px auto"><b>Admins only</b>Your account is view-only. Ask an admin if you need to add halls, students or allocate seats.<br><br><a class="btn" href="{{ url_for('index') }}">Back to dashboard</a></div>
+{% endblock %}

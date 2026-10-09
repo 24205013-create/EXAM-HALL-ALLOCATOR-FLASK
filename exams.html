@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}Exams{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Exams</h1><p>{% if is_admin %}Create an exam, choose halls, then allocate seats.{% else %}Upcoming and completed exams. Open one to see the seating chart.{% endif %}</p></div></div>
+<div class="{{ 'g-form' if is_admin }}">
+  {% if is_admin %}<form method="post" class="card"><h3>Create an exam</h3>
+    <label>Exam name<input name="name" placeholder="AI Internal Test 1" required></label>
+    <div class="row"><label>Date<input type="date" name="date" required></label>
+    <label>Session<select name="session"><option value="FN">Forenoon</option><option value="AN">Afternoon</option></select></label></div>
+    {% if depts %}<label style="margin-bottom:8px">Departments <span class="muted">(none = all)</span></label>
+    <div class="chips" id="dchips">{% for d in depts %}<label class="chip" data-dept="{{ d._id }}"><input type="checkbox" name="depts" value="{{ d._id }}" data-n="{{ d.n }}" hidden>{{ d._id }} · {{ d.n }}</label>{% endfor %}</div>{% endif %}
+    {% if halls %}<label style="margin-bottom:8px">Halls to use</label>
+    <div class="pick">{% for h in halls %}<label><input type="checkbox" name="hall_ids" value="{{ h._id }}" data-seats="{{ h.rows * h.cols }}"><span>{{ h.name }}<small>{{ h.rows * h.cols }} seats</small></span></label>{% endfor %}</div>
+    <div class="note" id="fit" data-students="{{ depts|sum(attribute='n') }}">Select halls to check capacity.</div>
+    <button class="btn block" type="submit">{{ ico('plus') }} Create exam</button>
+    {% else %}<div class="note bad">Add a <a href="{{ url_for('halls_page') }}">hall</a> first.</div>{% endif %}
+  </form>{% endif %}
+  <div>
+  {% if exams %}<div class="cards">{% for e in exams %}
+    <div class="card ex-card">
+      <div class="card-h" style="margin:0"><h3>{{ e.name }}</h3>{% if e.allocated %}<span class="badge ok">Allocated</span>{% else %}<span class="badge warn">Pending</span>{% endif %}</div>
+      <div class="date-chip">{{ ico('cal') }} {{ e.date }} · {{ 'Forenoon' if e.session == 'FN' else 'Afternoon' }}</div>
+      <div class="chips" style="margin:0">{% for d in (e.depts or ['All depts']) %}<span class="pill" {% if e.depts %}data-dept="{{ d }}"{% endif %}>{{ d }}</span>{% endfor %}</div>
+      <div><div class="meta" style="margin-bottom:6px"><span>Seats filled</span><b>{{ e.allocated }} / {{ e.capacity }}</b></div>
+      <div class="prog {{ 'full' if e.allocated }}"><i style="width:{{ (e.allocated * 100 / e.capacity)|round if e.capacity else 0 }}%"></i></div></div>
+      <div class="tools">{% if is_admin %}<a class="btn sm gold" href="{{ url_for('allocate_page', exam=e._id) }}">{{ ico('bolt') }} Allocate</a>{% endif %}<a class="btn sm ghost" href="{{ url_for('exam_detail', exam_id=e._id) }}">Open</a>
+      {% if is_admin %}<form method="post" action="{{ url_for('delete_exam', exam_id=e._id) }}" onsubmit="return confirm('Delete this exam and its seating?')"><button class="btn sm danger" type="submit">{{ ico('trash') }}</button></form>{% endif %}</div>
+    </div>{% endfor %}</div>
+  {% else %}<div class="card empty"><b>No exams yet</b>Your exams will appear here as cards.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+const fit=document.getElementById('fit');
+if(fit){const bs=[...document.querySelectorAll('.pick input')],ds=[...document.querySelectorAll('#dchips input')],all=+fit.dataset.students;
+document.querySelectorAll('#dchips .chip').forEach(c=>c.onchange=()=>{c.classList.toggle('on',c.querySelector('input').checked);u()});
+const u=()=>{const sel=ds.filter(d=>d.checked),n=sel.length?sel.reduce((a,d)=>a+ +d.dataset.n,0):all;
+const s=bs.filter(b=>b.checked).reduce((a,b)=>a+ +b.dataset.seats,0);
+fit.className='note '+(!s?'':s>=n?'ok':'bad');
+fit.textContent=!s?'Select halls to check capacity.':s>=n?`${s} seats for ${n} students — enough.`:`${s} seats but ${n} students — pick more halls.`};
+bs.forEach(b=>b.onchange=u)}
+</script>{% endblock %}

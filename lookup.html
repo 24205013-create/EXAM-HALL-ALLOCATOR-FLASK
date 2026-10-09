@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}Find my seat{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Find my seat</h1><p>Enter a register number to see hall and seat for every exam.</p></div></div>
+<div style="max-width:760px">
+<form method="get" class="card" style="display:flex;gap:12px;align-items:flex-end;margin-bottom:22px">
+  <label style="flex:1;margin:0">Register number<input name="reg_no" value="{{ reg_no }}" placeholder="CSE2401" required autofocus></label>
+  <button class="btn" type="submit">{{ ico('find') }} Search</button></form>
+{% if reg_no %}{% if results %}
+  {% for r in results %}<div class="ticket"><div class="l"><span class="badge info">{{ r.exam.date }}</span><h2 style="margin:10px 0 4px">{{ r.exam.name }}</h2>
+    <div class="who"><span class="avatar" data-dept="{{ r.alloc.dept }}">{{ r.alloc.name[:1] }}</span><span><b>{{ r.alloc.name }}</b><small>{{ r.alloc.reg_no }} · {{ r.alloc.dept }}</small></span></div></div>
+    <div class="r"><span>{{ r.alloc.hall_name }}</span><b>{{ r.alloc.seat }}</b><span>Seat</span></div></div>{% endfor %}
+{% else %}<div class="card empty"><b>No seat found</b>Check <strong>{{ reg_no }}</strong>, or seating may not be allocated yet.</div>{% endif %}{% endif %}
+</div>
+{% endblock %}

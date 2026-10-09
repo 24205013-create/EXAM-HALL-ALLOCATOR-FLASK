@@ -1,0 +1,18 @@
+{% extends "_auth.html" %}{% from "_icons.html" import ico %}
+{% block title %}Sign in{% endblock %}
+{% block form %}
+<h1>Welcome back</h1><p class="muted">Sign in to manage exam halls and seating.</p>
+<form method="post" autocomplete="on">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% set tab = tab|default('user') %}
+  <div class="seg"><button type="button" data-r="user" class="{{ 'on' if tab != 'admin' }}">User login</button><button type="button" data-r="admin" class="{{ 'on' if tab == 'admin' }}">Admin login</button></div>
+  <input type="hidden" name="as" id="as" value="{{ tab }}">
+  <label>Email<div class="field">{{ ico('mail') }}<input type="email" name="email" value="{{ email }}" placeholder="you@college.edu" required autofocus autocomplete="username"></div></label>
+  <label>Password<div class="field">{{ ico('lock') }}<input type="password" name="password" placeholder="Your password" required autocomplete="current-password"><button type="button" class="eye" aria-label="Show password">{{ ico('eye') }}</button></div></label>
+  <div class="between"><label class="check"><input type="checkbox" name="remember"> Keep me signed in</label></div>
+  <button class="btn gold block lg" type="submit">Sign in</button>
+</form>
+<p class="switch">New here? <a href="{{ url_for('signup') }}">Create an account</a></p>
+{% endblock %}
+{% block scripts %}<script>document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('as').value=b.dataset.r});
+document.querySelectorAll('.eye').forEach(b=>b.onclick=()=>{const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password'})</script>{% endblock %}

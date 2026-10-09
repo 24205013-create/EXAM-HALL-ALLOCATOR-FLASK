@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}Exam halls{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Exam halls</h1><p>{{ halls|length }} halls · {{ total_seats }} seats in total.</p></div></div>
+<div class="{{ 'g-form' if is_admin }}">
+  {% if is_admin %}<form method="post" class="card">
+    <h3>Add a hall</h3>
+    <label>Hall name<input name="name" placeholder="Hall A" required></label>
+    <div class="row"><label>Rows (1–26)<input type="number" name="rows" min="1" max="26" value="5" required></label>
+    <label>Columns (1–30)<input type="number" name="cols" min="1" max="30" value="8" required></label></div>
+    <div class="note" id="cap">40 seats</div>
+    <button class="btn block" type="submit">{{ ico('plus') }} Add hall</button>
+  </form>{% endif %}
+  <div>
+  {% if halls %}<div class="cards">{% for h in halls %}
+    <div class="card hall-card"><div class="card-h"><h3>{{ h.name }}</h3><span class="badge info">{{ h.used }} exam{{ '' if h.used == 1 else 's' }}</span></div>
+      <div class="mini" style="grid-template-columns:repeat({{ h.cols }},1fr)">{% for i in range([h.rows * h.cols, 150]|min) %}<i></i>{% endfor %}</div>
+      <div class="meta"><span>{{ h.rows }} × {{ h.cols }}</span><b>{{ h.rows * h.cols }} seats</b></div>
+      {% if is_admin %}<form method="post" action="{{ url_for('delete_hall', hall_id=h._id) }}" onsubmit="return confirm('Delete this hall?')" style="margin-top:14px"><button class="btn sm danger" type="submit">{{ ico('trash') }} Delete</button></form>{% endif %}
+    </div>{% endfor %}</div>
+  {% else %}<div class="card empty"><b>No halls yet</b>Use the form to add your first hall.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+const f=document.querySelector('form'),u=()=>document.getElementById('cap').textContent=(f.rows.value*f.cols.value||0)+' seats';
+f.rows.oninput=f.cols.oninput=u;u();
+</script>{% endblock %}

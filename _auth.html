@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block body %}
+<div class="auth">
+  <section class="auth-art">
+    <a class="brand" href="#"><span class="logo">{{ ico('cap') }}</span><span><b>Hall Exams</b><small>Seat allocation portal</small></span></a>
+    <div>
+      <h2>Fair seating,<br>every single exam.</h2>
+      <p>Allocate halls in seconds. Departments are kept apart and every run produces a fresh arrangement.</p>
+      <div class="art-grid">{% for h in [210,150,30,280,90,330,210,150,30,280,90,330,150,30,280,90,330,210,30,280] %}<i style="--h:{{ h }}"></i>{% endfor %}</div>
+      <ul class="ticks"><li>{{ ico('shield') }} Secure sign in</li><li>{{ ico('bolt') }} Smart, non-repeating seating</li><li>{{ ico('seat') }} Printable hall charts</li></ul>
+    </div>
+    <small>© Hall Exams</small>
+  </section>
+  <section class="auth-form"><div class="auth-card">{% block form %}{% endblock %}</div></section>
+</div>
+{% endblock %}

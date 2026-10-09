@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}{{ exam.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ exam.name }}</h1><p>{{ ico('cal') }} {{ exam.date }} · {{ 'Forenoon' if exam.session == 'FN' else 'Afternoon' }} · {{ exam.depts|join(', ') if exam.depts else 'All departments' }} {% if count %}<span class="badge ok">Allocated</span> <span class="badge info">Run #{{ exam.runs or 1 }} · new layout every run</span>{% else %}<span class="badge warn">Pending</span>{% endif %}</p></div>
+  <div class="tools">
+    {% if is_admin %}<form method="post" action="{{ url_for('run_allocation', exam_id=exam._id) }}" class="tools"><select name="mode" class="mode" title="How students are spread over halls"><option value="balanced">Balanced across halls</option><option value="sequential" {{ 'selected' if exam.mode == 'sequential' }}>Fill hall by hall</option></select><button class="btn gold" type="submit">{{ ico('bolt') }} {{ 'Re-run allocation' if count else 'Allocate seats' }}</button></form>{% endif %}
+    {% if count %}<a class="btn ghost" href="{{ url_for('export_exam', exam_id=exam._id) }}">{{ ico('down') }} CSV</a><button class="btn ghost" onclick="window.print()" type="button">{{ ico('print') }} Print</button>{% endif %}
+    <a class="btn ghost" href="{{ url_for('exams_page') }}">Back</a></div></div>
+<div class="stats">
+  <div class="card stat"><div class="ic green">{{ ico('users') }}</div><div><b>{{ count }}</b><span>Students seated</span></div></div>
+  <div class="card stat"><div class="ic">{{ ico('hall') }}</div><div><b>{{ grids|length }}</b><span>Halls</span></div></div>
+  <div class="card stat"><div class="ic gold">{{ ico('seat') }}</div><div><b>{{ capacity }}</b><span>Total seats</span></div></div>
+  <div class="card stat"><div class="ic rose">{{ ico('cap') }}</div><div><b>{{ depts|length }}</b><span>Departments</span></div></div>
+</div>
+{% if not count %}<div class="card empty"><b>No seating yet</b>{% if is_admin %}Click “Allocate seats” to fill the halls and keep same-department students apart.{% else %}Seating is not allocated yet. Please check again later.{% endif %}</div>
+{% else %}
+<div class="card noprint" style="margin-bottom:22px">
+  <div class="card-h"><h3>Departments</h3><div class="search" style="width:280px">{{ ico('find') }}<input id="find" placeholder="Highlight a register number"></div></div>
+  <div class="chips" style="margin:0"><button class="chip on" data-f="">All</button>{% for d in depts %}<button class="chip" data-dept="{{ d }}" data-f="{{ d }}">{{ d }}</button>{% endfor %}</div>
+</div>
+{% for g in grids %}
+<section class="card hall-box"><div class="card-h"><h2>{{ g.hall.name }}</h2><span class="muted">{{ g.seated }} of {{ g.hall.rows * g.hall.cols }} seats · {{ g.hall.rows }} × {{ g.hall.cols }}</span></div>
+  <div class="board">FRONT OF HALL</div>
+  <div class="scroll"><div class="seat-grid" style="grid-template-columns:2rem repeat({{ g.hall.cols }}, minmax(4.6rem,1fr))"><div></div>
+    {% for c in range(g.hall.cols) %}<div class="col-head">{{ c + 1 }}</div>{% endfor %}
+    {% for row in g.grid %}<div class="row-head">{{ loop.index0 | row_letter }}</div>
+      {% for a in row %}{% if a %}<div class="seat" data-dept="{{ a.dept }}" data-reg="{{ a.reg_no }}" data-name="{{ a.name }}" data-seat="{{ a.seat }}" data-hall="{{ g.hall.name }}" title="{{ a.name }} · {{ a.seat }}" tabindex="0"><strong>{{ a.reg_no }}</strong><small>{{ a.dept }}</small></div>{% else %}<div class="seat empty">—</div>{% endif %}{% endfor %}
+    {% endfor %}</div></div>
+</section>{% endfor %}{% endif %}
+<dialog id="info"><form method="dialog" class="dlg"><span class="avatar" id="i-av"></span><h3 id="i-name"></h3><p class="muted" id="i-meta"></p><div class="ticket-seat"><span id="i-hall"></span><b id="i-seat"></b></div><button class="btn ghost block">Close</button></form></dialog>
+{% endblock %}
+{% block scripts %}<script>
+const seats=[...document.querySelectorAll('.seat[data-dept]')];
+document.querySelectorAll('.chip[data-f]').forEach(c=>c.onclick=()=>{
+  document.querySelectorAll('.chip[data-f]').forEach(x=>x.classList.toggle('on',x===c));
+  seats.forEach(s=>s.classList.toggle('dim',!!c.dataset.f&&s.dataset.dept!==c.dataset.f))});
+const dlg=document.getElementById('info');
+const show=s=>{if(!dlg||s.classList.contains('dim'))return;i_av=document.getElementById('i-av');i_av.dataset.dept=s.dataset.dept;i_av.style.setProperty('--h',s.style.getPropertyValue('--h'));i_av.textContent=s.dataset.name[0];
+document.getElementById('i-name').textContent=s.dataset.name;document.getElementById('i-meta').textContent=s.dataset.reg+' · '+s.dataset.dept;
+document.getElementById('i-hall').textContent=s.dataset.hall;document.getElementById('i-seat').textContent=s.dataset.seat;dlg.showModal()};
+seats.forEach(s=>{s.onclick=()=>show(s);s.onkeydown=e=>{if(e.key==='Enter')show(s)}});
+const q=document.getElementById('find');
+if(q)q.oninput=()=>{const v=q.value.trim().toLowerCase();
+  seats.forEach(s=>{const h=v&&s.dataset.reg.toLowerCase().includes(v);s.classList.toggle('hit',!!h);s.classList.toggle('dim',!!v&&!h)});
+  const f=document.querySelector('.seat.hit');if(f)f.scrollIntoView({block:'center',inline:'center'})};
+</script>{% endblock %}

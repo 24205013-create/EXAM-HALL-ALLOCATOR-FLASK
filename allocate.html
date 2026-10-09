@@ -1,0 +1,75 @@
+{% extends "base.html" %}{% from "_icons.html" import ico %}
+{% block title %}Allocate Hall{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Allocate Hall</h1><p>Pick an exam, choose how to spread students, and run the seating algorithm.</p></div></div>
+{% if not halls or not total %}
+<div class="card empty"><b>Setup needed</b>Add {% if not halls %}<a href="{{ url_for('halls_page') }}">halls</a>{% endif %}{% if not halls and not total %} and {% endif %}{% if not total %}<a href="{{ url_for('students_page') }}">students</a>{% endif %} first, then come back to allocate.</div>
+{% else %}
+<form method="post" id="af" class="g-side">
+  <div class="stack">
+    <div class="card"><h3>1 · Choose exam</h3>
+      <div class="pick" style="grid-template-columns:1fr 1fr">
+        <label><input type="radio" name="target_kind" value="old" {{ 'checked' if exams }}><span>Existing exam<small>{{ exams|length }} available</small></span></label>
+        <label><input type="radio" name="target_kind" value="new" {{ 'checked' if not exams }}><span>New exam<small>Create &amp; allocate</small></span></label>
+      </div>
+      <div id="old">
+        {% if exams %}<label>Exam<select name="target" id="sel">{% for e in exams %}<option value="{{ e._id }}" data-seats="{{ e.capacity }}" data-need="{{ e.need }}" {{ 'selected' if selected == e._id|string }}>{{ e.name }} · {{ e.date }}{{ ' · seated' if e.allocated }}</option>{% endfor %}</select></label>
+        {% else %}<div class="note">No exams yet. Use “New exam”.</div>{% endif %}
+      </div>
+      <div id="new" hidden>
+        <input type="hidden" name="target" value="new" disabled id="tnew">
+        <label>Exam name<input name="name" placeholder="AI Internal Test 1"></label>
+        <div class="row"><label>Date<input type="date" name="date"></label>
+        <label>Session<select name="session"><option value="FN">Forenoon</option><option value="AN">Afternoon</option></select></label></div>
+        <label style="margin-bottom:8px">Halls to use</label>
+        <div class="pick">{% for h in halls %}<label><input type="checkbox" name="hall_ids" value="{{ h._id }}" data-seats="{{ h.rows * h.cols }}"><span>{{ h.name }}<small>{{ h.rows * h.cols }} seats</small></span></label>{% endfor %}</div>
+        <label style="margin-bottom:8px">Departments <span class="muted">(none = all)</span></label>
+        <div class="chips" id="dchips">{% for d in depts %}<label class="chip" data-dept="{{ d._id }}"><input type="checkbox" name="depts" value="{{ d._id }}" data-n="{{ d.n }}">{{ d._id }} · {{ d.n }}</label>{% endfor %}</div>
+      </div>
+    </div>
+    <div class="card"><h3>2 · How to seat students</h3>
+      <div class="pick" style="grid-template-columns:1fr 1fr">
+        <label><input type="radio" name="mode" value="balanced" checked><span>Balanced<small>Share students across all halls</small></span></label>
+        <label><input type="radio" name="mode" value="sequential"><span>Hall by hall<small>Fill one hall, then the next</small></span></label>
+      </div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="card"><h3>3 · Check &amp; allocate</h3>
+      <div class="meta" style="margin-bottom:8px"><span>Students</span><b id="s-need">0</b></div>
+      <div class="meta" style="margin-bottom:12px"><span>Seats</span><b id="s-seats">0</b></div>
+      <div class="prog" style="margin-bottom:14px"><i id="s-bar" style="width:0"></i></div>
+      <div class="note" id="fit">Choose an exam to check capacity.</div>
+      <button class="btn gold block lg" type="submit" id="go">{{ ico('bolt') }} Allocate Hall</button>
+    </div>
+    <div class="card"><h3>What the algorithm does</h3>
+      <ul class="ticks dark"><li>{{ ico('users') }} Keeps same-department students apart</li><li>{{ ico('bolt') }} Gives a new layout on every run</li><li>{{ ico('hall') }} Different pattern in each hall</li><li>{{ ico('seat') }} Spreads students when a hall is not full</li></ul>
+    </div>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+const f=document.getElementById('af');
+if(f){
+const kinds=[...f.querySelectorAll('[name=target_kind]')],old=document.getElementById('old'),nw=document.getElementById('new'),sel=document.getElementById('sel'),tnew=document.getElementById('tnew');
+const hs=[...nw.querySelectorAll('[name=hall_ids]')],ds=[...nw.querySelectorAll('[name=depts]')],total={{ total }};
+const $=id=>document.getElementById(id);
+function upd(){
+  const isNew=kinds.find(k=>k.checked).value==='new';
+  old.hidden=isNew;nw.hidden=!isNew;tnew.disabled=!isNew;if(sel)sel.disabled=isNew;
+  nw.querySelectorAll('input,select').forEach(e=>{if(e!==tnew)e.disabled=!isNew});
+  let need,seats;
+  if(isNew){const sd=ds.filter(d=>d.checked);need=sd.length?sd.reduce((a,d)=>a+ +d.dataset.n,0):total;seats=hs.filter(h=>h.checked).reduce((a,h)=>a+ +h.dataset.seats,0)}
+  else if(sel){const o=sel.selectedOptions[0];need=+o.dataset.need;seats=+o.dataset.seats}else{need=0;seats=0}
+  $('s-need').textContent=need;$('s-seats').textContent=seats;
+  const ok=seats>=need&&seats>0&&need>0;
+  $('s-bar').style.width=Math.min(100,seats?need*100/seats:0)+'%';
+  $('fit').className='note '+(!seats?'':ok?'ok':'bad');
+  $('fit').textContent=!seats?(isNew?'Pick at least one hall.':'Choose an exam.'):ok?`${seats} seats for ${need} students — ready to allocate.`:`${seats} seats but ${need} students — add more halls.`;
+  $('go').disabled=!ok;
+}
+document.querySelectorAll('#dchips .chip').forEach(c=>c.onchange=()=>c.classList.toggle('on',c.querySelector('input').checked));
+f.addEventListener('change',upd);upd();
+}
+</script>{% endblock %}
